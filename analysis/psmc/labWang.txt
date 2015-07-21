@@ -1,0 +1,12 @@
+BM dog ref
+BM wolf ref
+CI1 dog ref
+CI1 wolf ref
+GS dog ref
+GS wolf ref
+GW2 dog ref
+GW2 wolf ref
+GW1 dog ref
+GW1 wolf ref
+TM dog ref
+TM wolf ref
