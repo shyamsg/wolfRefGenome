@@ -9,14 +9,17 @@ in the de novo reference genome project.
 Directory structure
 -------------------
 * code
+
 This directory contains all the code developed for this project. 
 
 * data
+
 The data is stored in the this directory in two sub-directories.
 One for the reads mapped to the wolf reference genome and another
 for the reads mapped to the dof reference genome.
 
 * analysis
+
 Each kind of analysis is stored in a separate sub-directory in this
 directory.
 
