@@ -1,3 +1,6 @@
+Wolf Reference Genome Project
+=============================
+
 This document describes the processing done for the reference
 genome project. It describes the variant calling processing 
 and the subsequent analyses that need to be done to include 
