@@ -46,7 +46,7 @@ def main():
     xlim([args.minx, xmax])
     ylim([1, args.maxy])
     ylabel('Population size')
-    xlabel(r'Time ($\mu$='+str(args.mut)+', generation time='+str(args.gentime)+'yrs)')
+    xlabel(r'Time ($\mu$='+str(args.mut)+', g='+str(args.gentime)+' yrs)')
     title('Effect of reference genome on PSMC results: Dog vs. Wolf')
     ax = gca()
     ax.set_xscale('log')
