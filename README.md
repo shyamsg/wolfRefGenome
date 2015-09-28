@@ -30,22 +30,22 @@ Data and data processing
 The data is stored in 3 directories directly from Sama. Here is
 the relevatnt extract from Sama's email.
 
-> #Novembre
-> #Dog
+> \#Novembre
+> \#Dog
 > /disk/lemaitre/data/joseas/Wolf/Mikkel/Novembre_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz
-> #Wolf
+> \#Wolf
 > /disk/lemaitre/data/joseas/Wolf/Mikkel/Novembre_data/VCFsWolf/results/canines_ref_wolf/genotypes/*filtered.vcf.bgz
 > 
-> #Wang
-> #Dog
+> \#Wang
+> \#Dog
 > /home/mischu/data/projects/2014-03_ancient_dogs/phylogeny/results/canines/genotypes/W*ed.vcf.bgz
-> #Wolf
+> \#Wolf
 > /disk/lemaitre/data/joseas/Wolf/VCFsWolf/results/Wang_canines_ref_wolf/genotypes/*filtered.vcf.bgz
 > 
-> #Zhang
-> #Dog
+> \#Zhang
+> \#Dog
 > /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz
-> #Wolf
+> \#Wolf
 > /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsWolf/results/canines_ref_wolf/genotypes/*filtered.vcf.bgz
 >
 
