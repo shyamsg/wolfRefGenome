@@ -1,25 +1,29 @@
 #! /usr/bin/env python
 
-# File; removeNullAlleles.py
+# File: filterSampleLevel.py
 # Date: 22nd July 2015
 # Author: Shyam Gopalakrishnan
-# This script removes the null indels,
-# i.e. indels with . as the alternate alleles.
-# It also filters sites based on a couple of 
-# criteria - 1. distance from indel
+# This script removes the null indels, indels with
+# . as the alternate allele, meaning no alt allele.
+# This script filters sites based on a couple of 
+# criteria -
+# 1. distance from indel
 # 2. distance from other snvs
 # 3. genotype qualities
 # The repeat mask removal and triallelic 
 # removal is done after this step.
-
-
+# Once the samples are all merged into a single
+# vcf, you can determine if the site is triallelic
+# or not. Also, using vcftools to get only a subset
+# of regions is easy, so repeat mask removal is also
+# done after this script. 
 
 import re
 import sys
 import argparse
 import gzip
 
-def removeNullIndels(vcf, out, qual, nQual, vardist, mind, maxd):
+def filterSample(vcf, out, qual, nQual, vardist, mind, maxd):
     """The function filters the sample level file to remove 
     null indels, and variants that fail certain quality
     constraints, such as distance to closest SNP or indel 
@@ -169,4 +173,4 @@ if __name__ == "__main__":
         print "The quality threshold is less than neighboring quality threshold."
         print "This is not sensible, so setting neighboring quality to quality threshold."
         args.nqual = args.qual
-    removeNullIndels(args.vcf, args.out, args.qual, args.nqual, args.vardist, args.mindepth, args.maxdepth)
+    filterSample(args.vcf, args.out, args.qual, args.nqual, args.vardist, args.mindepth, args.maxdepth)

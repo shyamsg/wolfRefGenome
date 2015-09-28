@@ -25,8 +25,30 @@ for the reads mapped to the dog reference genome.
 Each kind of analysis is stored in a separate sub-directory in this
 directory.
 
-Data processing
----------------
+Data and data processing
+------------------------
+The data is stored in 3 directories directly from Sama. Here is
+the relevatnt extract from Sama's email.
+
+> #Novembre
+> #Dog
+> /disk/lemaitre/data/joseas/Wolf/Mikkel/Novembre_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz
+> #Wolf
+> /disk/lemaitre/data/joseas/Wolf/Mikkel/Novembre_data/VCFsWolf/results/canines_ref_wolf/genotypes/*filtered.vcf.bgz
+> 
+> #Wang
+> #Dog
+> /home/mischu/data/projects/2014-03_ancient_dogs/phylogeny/results/canines/genotypes/W*ed.vcf.bgz
+> #Wolf
+> /disk/lemaitre/data/joseas/Wolf/VCFsWolf/results/Wang_canines_ref_wolf/genotypes/*filtered.vcf.bgz
+> 
+> #Zhang
+> #Dog
+> /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz
+> #Wolf
+> /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsWolf/results/canines_ref_wolf/genotypes/*filtered.vcf.bgz
+>
+
 Each sample is processed using the same processing pipeline. 
 The samples are processed, each independently, to get the 
 variants in each sample. The variants from each sample are 
