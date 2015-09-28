@@ -10,13 +10,15 @@ Directory structure
 -------------------
 * code
 
-This directory contains all the code developed for this project. 
+This directory contains all the code developed for this project. It 
+only includes code that has been developed by Shyam. Code from Sama
+is present in the his directory on the EvoGenomics+GeoGenetics cluster.
 
 * data
 
 The data is stored in the this directory in two sub-directories.
 One for the reads mapped to the wolf reference genome and another
-for the reads mapped to the dof reference genome.
+for the reads mapped to the dog reference genome.
 
 * analysis
 
@@ -35,7 +37,17 @@ Filtering
 The variants are filtered to ensure that the variants retained 
 are the ones that are reliable. The filters might involve the 
 identification in multiple samples, the depth of coverage in 
-each sample and other such statistics.
+each sample and other such statistics. 
+
+The initial filtering of the data done using the _paleomix_ 
+pipeline only is done using many default and user chosen 
+parameters that are reflected in Sama's scripts. These filters 
+do not discard any of the sites that are identified in the VCFs.
+Instead, they simply replace the FILTER column in the VCF file with
+appropriate tags that reflect the filter that lead to the failure
+that led to this site being marked as not PASS (or .). This allows
+us to filter the VCF files again, using either vcftools or custom
+scripts by ignoring the FILTER field.
 
 
 Analyses
