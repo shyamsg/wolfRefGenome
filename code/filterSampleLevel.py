@@ -98,7 +98,7 @@ def filterSample(vcf, out, qual, nQual, vardist, mind, maxd):
         # if curqual is low, set getnotype to missing
         if curqual < qual:
             line = line.replace(curgeno, './.', 1)
-        # if curline is variant, go over previous stuff and output the stuff 
+        # Since curline is variant, go over previous stuff and output the stuff 
         # outside range and delete them later
         delindexes = []
         if curtype == 1: # snp
