@@ -28,7 +28,7 @@ directory.
 Data and data processing
 ------------------------
 The data is stored in 3 directories directly from Sama. Here is
-the relevatnt extract from Sama's email.
+the relevant extract from Sama's email.
 
 > \#Novembre
 > \#Dog

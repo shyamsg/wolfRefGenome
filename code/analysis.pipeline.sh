@@ -48,25 +48,52 @@ if [ ! -d $DATA_HOME/wolfRef ]; then
 fi
 
 ## Dog ref mapping vcfs from paleomix - done by Sama
-## The files are named bgz but Sama assures me that
-## they are gz, so renaming the link.
+## Linking the bgzip of the vcf and the tabix of it
 cd $DATA_HOME/dogRef
 ## Novembre data
 for vcf in /disk/lemaitre/data/joseas/Wolf/Mikkel/Novembre_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz; do
     if [ ! -e $vcf ]; then
-	ln -s $vcf $(basename $vcf | sed 's/bgz/gz/')
+	ln -s $vcf .
+	ln -s $vcf.tbi .
     fi
 done
 ## Wang data
 for vcf in /home/mischu/data/projects/2014-03_ancient_dogs/phylogeny/results/canines/genotypes/W*ed.vcf.bgz; do
     if [ ! -e $vcf ]; then
-	ln -s $vcf $(basename $vcf | sed 's/bgz/gz/')
+	ln -s $vcf .
+	ln -s $vcf.tbi .
     fi
 done
 ## Zhang data
 for vcf in /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz; do
     if [ ! -e $vcf ]; then
-	ln -s $vcf $(basename $vcf | sed 's/Chinese/Zhang/' | sed 's/bgz/gz/').
+	ln -s $vcf $(basename $vcf | sed 's/Chinese/Zhang/')
+	ln -s $vcf.tbi $(basename $vcf.tbi | sed 's/Chinese/Zhang/')
+    fi
+done
+
+## Wolf ref mapping vcfs from paleomix - done by Sama
+## Linking the bgzip of the vcf and the tabix of it
+cd $DATA_HOME/dogRef
+## Novembre data
+for vcf in /disk/lemaitre/data/joseas/Wolf/Mikkel/Novembre_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz; do
+    if [ ! -e $vcf ]; then
+	ln -s $vcf .
+	ln -s $vcf.tbi .
+    fi
+done
+## Wang data
+for vcf in /home/mischu/data/projects/2014-03_ancient_dogs/phylogeny/results/canines/genotypes/W*ed.vcf.bgz; do
+    if [ ! -e $vcf ]; then
+	ln -s $vcf .
+	ln -s $vcf.tbi .
+    fi
+done
+## Zhang data
+for vcf in /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz; do
+    if [ ! -e $vcf ]; then
+	ln -s $vcf $(basename $vcf | sed 's/Chinese/Zhang/')
+	ln -s $vcf.tbi $(basename $vcf.tbi | sed 's/Chinese/Zhang/')
     fi
 done
 
