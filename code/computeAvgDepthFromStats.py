@@ -16,7 +16,7 @@ import argparse as ap
 
 if __name__ == "__main__":
     parser = ap.ArgumentParser(description="Depth computer from bcftools stats file.")
-    parser.add_argument("-s", "--statfile", type=string, metavar="StatFile", dest="statfile", help="Statistics file for sample")
+    parser.add_argument("-s", "--statfile", type=str, metavar="StatFile", dest="statfile", help="Statistics file for sample")
     args = parser.parse_args()
     statfile = args.statfile
 else:
