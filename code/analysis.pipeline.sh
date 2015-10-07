@@ -52,21 +52,24 @@ fi
 cd $DATA_HOME/dogRef
 ## Novembre data
 for vcf in /disk/lemaitre/data/joseas/Wolf/Mikkel/Novembre_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz; do
-    if [ ! -e $vcf ]; then
+    if [ ! -e $(basename $vcf) ]; then
+	echo "Linking Novembre dog mapped data: $vcf."
 	ln -s $vcf .
 	ln -s $vcf.tbi .
     fi
 done
 ## Wang data
 for vcf in /home/mischu/data/projects/2014-03_ancient_dogs/phylogeny/results/canines/genotypes/W*ed.vcf.bgz; do
-    if [ ! -e $vcf ]; then
+    if [ ! -e $(basename $vcf) ]; then
+	echo "Linking Wang dog mapped data: $vcf."
 	ln -s $vcf .
 	ln -s $vcf.tbi .
     fi
 done
 ## Zhang data
 for vcf in /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz; do
-    if [ ! -e $vcf ]; then
+    if [ ! -e $(basename $vcf | sed 's/Chinese/Zhang/') ]; then
+	echo "Linking Zhang dog mapped data: $vcf."
 	ln -s $vcf $(basename $vcf | sed 's/Chinese/Zhang/')
 	ln -s $vcf.tbi $(basename $vcf.tbi | sed 's/Chinese/Zhang/')
     fi
@@ -74,26 +77,61 @@ done
 
 ## Wolf ref mapping vcfs from paleomix - done by Sama
 ## Linking the bgzip of the vcf and the tabix of it
-cd $DATA_HOME/dogRef
+cd $DATA_HOME/wolfRef
 ## Novembre data
-for vcf in /disk/lemaitre/data/joseas/Wolf/Mikkel/Novembre_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz; do
-    if [ ! -e $vcf ]; then
+for vcf in /disk/lemaitre/data/joseas/Wolf/Mikkel/Novembre_data/VCFsWolf/results/canines_ref_wolf/genotypes/*filtered.vcf.bgz; do
+    if [ ! -e $(basename $vcf) ]; then
+	echo "Linking Novembre wolf mapped data: $vcf."
 	ln -s $vcf .
 	ln -s $vcf.tbi .
     fi
 done
 ## Wang data
-for vcf in /home/mischu/data/projects/2014-03_ancient_dogs/phylogeny/results/canines/genotypes/W*ed.vcf.bgz; do
-    if [ ! -e $vcf ]; then
+for vcf in /disk/lemaitre/data/joseas/Wolf/VCFsWolf/results/Wang_canines_ref_wolf/genotypes/*filtered.vcf.bgz; do
+    if [ ! -e $(basename $vcf) ]; then
+	echo "Linking Wang wolf mapped data: $vcf."
 	ln -s $vcf .
 	ln -s $vcf.tbi .
     fi
 done
 ## Zhang data
-for vcf in /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsDog/results/canines_ref_dog/genotypes/*filtered.vcf.bgz; do
-    if [ ! -e $vcf ]; then
+for vcf in /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsWolf/results/canines_ref_wolf/genotypes/*filtered.vcf.bgz; do
+    if [ ! -e $(basename $vcf | sed 's/Chinese/Zhang/') ]; then
+	echo "Linking Zhang wolf mapped data: $vcf."
 	ln -s $vcf $(basename $vcf | sed 's/Chinese/Zhang/')
 	ln -s $vcf.tbi $(basename $vcf.tbi | sed 's/Chinese/Zhang/')
     fi
 done
+
+## Compute the average depth of each sample using vcftools
+## all dog mapped vcfs
+module load bcftools/1.2
+cd $DATA_HOME/dogRef
+for vcf in *.vcf.bgz; do
+    if [ ! -e $(basename $vcf .vcf.bgz).stats ]; then
+	echo "Computing stats for $vcf."
+	bcftools stats -d 0,500,1 $vcf >& $(basename $vcf .vcf.bgz).stats &
+    fi
+done
+
+## all wolf mapped vcfs
+cd $DATA_HOME/wolfRef
+for vcf in *.vcf.bgz; do
+    if [ ! -e $(basename $vcf .vcf.bgz).stats ]; then
+	echo "Computing stats for $vcf."
+	bcftools stats -d 0,500,1 $vcf >& $(basename $vcf .vcf.bgz).idepth &
+    fi
+done
+
+## This command makes the shell wait till the processes are done. Only
+## here so that the next steps wait
+wait
+
+## Generate a file with the depth of each sample in the directory
+cd $DATA_HOME/dogRef
+if [ ! -e dogRef.allSamples.avgdepths ]; then
+    for statfile in *.stats; do
+	$PROJECT_HOME/code/computeAvgDepthFromStats.py $statfile >> dogRef.allSamples.avgdepths
+    done
+fi
 
