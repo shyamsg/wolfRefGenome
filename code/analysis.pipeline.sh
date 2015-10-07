@@ -119,7 +119,7 @@ cd $DATA_HOME/wolfRef
 for vcf in *.vcf.bgz; do
     if [ ! -e $(basename $vcf .vcf.bgz).stats ]; then
 	echo "Computing stats for $vcf."
-	bcftools stats -d 0,500,1 $vcf >& $(basename $vcf .vcf.bgz).idepth &
+	bcftools stats -d 0,500,1 $vcf >& $(basename $vcf .vcf.bgz).stats &
     fi
 done
 
@@ -131,7 +131,14 @@ wait
 cd $DATA_HOME/dogRef
 if [ ! -e dogRef.allSamples.avgdepths ]; then
     for statfile in *.stats; do
-	$PROJECT_HOME/code/computeAvgDepthFromStats.py $statfile >> dogRef.allSamples.avgdepths
+	$PROJECT_HOME/code/computeAvgDepthFromStats.py $(basename $statfile .stats) >> dogRef.allSamples.avgdepths
+    done
+fi
+
+cd $DATA_HOME/wolfRef
+if [ ! -e wolfRef.allSamples.avgdepths ]; then
+    for statfile in *.stats; do
+	$PROJECT_HOME/code/computeAvgDepthFromStats.py $statfile >> wolfRef.allSamples.avgdepths
     done
 fi
 
