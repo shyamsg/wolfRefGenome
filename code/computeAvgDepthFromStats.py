@@ -13,15 +13,17 @@
 import numpy as np
 import sys
 import argparse as ap
+from os.path import basename 
 
 if __name__ == "__main__":
     parser = ap.ArgumentParser(description="Depth computer from bcftools stats file.")
-    parser.add_argument("-s", "--statfile", type=str, metavar="StatFile", dest="statfile", help="Statistics file for sample")
+    parser.add_argument("-s", "--statfile", type=str, metavar="StatFile", dest="statfile", help="Statistics file for sample", required=True)
     args = parser.parse_args()
     statfile = args.statfile
 else:
     statfile = "test.stats"
 
+infile = open(statfile)
 cumulDepth = 0.0
 numSites = 0
 for line in infile:
@@ -33,5 +35,5 @@ for line in infile:
             cumulDepth += curSites*(float(line[2][1:])+1)
         else:
             cumulDepth += curSites*float(line[2])
-            
-print statfile[0:-6], np.round(cumulDepth/numSites, 3)
+
+print basename(statfile)[0:-6], np.round(cumulDepth/numSites, 3)

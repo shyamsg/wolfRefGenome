@@ -131,14 +131,14 @@ wait
 cd $DATA_HOME/dogRef
 if [ ! -e dogRef.allSamples.avgdepths ]; then
     for statfile in *.stats; do
-	$PROJECT_HOME/code/computeAvgDepthFromStats.py $(basename $statfile .stats) >> dogRef.allSamples.avgdepths
+	$PROJECT_HOME/code/computeAvgDepthFromStats.py -s $statfile >> dogRef.allSamples.avgdepths
     done
 fi
 
 cd $DATA_HOME/wolfRef
 if [ ! -e wolfRef.allSamples.avgdepths ]; then
     for statfile in *.stats; do
-	$PROJECT_HOME/code/computeAvgDepthFromStats.py $statfile >> wolfRef.allSamples.avgdepths
+	$PROJECT_HOME/code/computeAvgDepthFromStats.py -s $statfile >> wolfRef.allSamples.avgdepths
     done
 fi
 
