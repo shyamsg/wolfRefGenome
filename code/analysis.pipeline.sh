@@ -25,6 +25,9 @@
 PROJECT_HOME=/home/shyam/projects/wolfRefGenome
 DATA_HOME=/home/shyam/data/wolfRefGenome
 
+##################################################
+#                Directory setup                 #
+##################################################
 ## If data directory and data link do not exist in
 ## the wolfRefGenome directory then make a link.
 if [ ! -e $DATA_HOME ]; then
@@ -47,6 +50,9 @@ if [ ! -d $DATA_HOME/wolfRef ]; then
     mkdir $DATA_HOME/wolfRef
 fi
 
+#################################################
+#  Data linking from Sama's initial processing  #
+#################################################
 ## Dog ref mapping vcfs from paleomix - done by Sama
 ## Linking the bgzip of the vcf and the tabix of it
 cd $DATA_HOME/dogRef
@@ -103,6 +109,9 @@ for vcf in /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsWolf/results/canines_ref
     fi
 done
 
+##################################################
+#      Compute the stats for each vcf file       #
+##################################################
 ## Compute the average depth of each sample using vcftools
 ## all dog mapped vcfs
 module load bcftools/1.2
@@ -127,6 +136,10 @@ done
 ## here so that the next steps wait
 wait
 
+##################################################
+#       Filtering of vcf based on depth and      #
+#             distance to snps/indels            #
+##################################################
 ## Generate a file with the depth of each sample in the directory
 cd $DATA_HOME/dogRef
 if [ ! -e dogRef.allSamples.avgdepths ]; then
@@ -142,3 +155,38 @@ if [ ! -e wolfRef.allSamples.avgdepths ]; then
     done
 fi
 
+## Run the script to filter the vcf file to remove
+## null indels and filter based on min/max depths.
+## Also filter on proximity to indels and snps.
+MINQUAL=20
+MINDIST=5
+MINDEPTH=5
+NEIGHBORQUAL=10
+
+cd $DATA_HOME/dogRef
+for vcf in *.vcf.bgz; do  
+    if [ ! -e $(basename $vcf .vcf.bgz).depthdist.vcf.bgz ]; then
+	AVGDEPTH=`grep $(basename $vcf .vcf.bgz) dogRef.allSamples.avgdepths | cut -f2 -d " "`
+	MAXDEPTH=`bc <<< "scale=0;$AVGDEPTH*2"`
+	(python $PROJECT_HOME/code/filterSampleLevel.py -i $vcf -q $MINQUAL -n $NEIGHBORQUAL -d $MINDEPTH -D $MAXDEPTH -v $MINDIST -o $(basename $vcf .vcf.bgz).depthdist.vcf && bgzip $(basename $vcf .vcf.bgz).depthdist.vcf) >& $(basename $vcf .vcf.bgz).log &
+    fi
+done
+
+cd $DATA_HOME/wolfRef
+for vcf in *.vcf.bgz; do  
+    if [ ! -e $(basename $vcf .vcf.bgz).depthdist.vcf.bgz ]; then
+	AVGDEPTH=`grep $(basename $vcf .vcf.bgz) wolfRef.allSamples.avgdepths | cut -f2 -d " "`
+	MAXDEPTH=`bc <<< "$AVGDEPTH*2"`
+	(python $PROJECT_HOME/code/filterSampleLevel.py -i $vcf -q $MINQUAL -n $NEIGHBORQUAL -d $MINDEPTH -D $MAXDEPTH -v $MINDIST -o $(basename $vcf .vcf.bgz).depthdist.vcf && bgzip $(basename $vcf .vcf.bgz).depthdist.vcf) >& $(basename $vcf .vcf.bgz).log &
+    fi
+done
+
+## This command makes sure the shell waits for the filtering processes to be done.
+## Next steps should be run only if these processes are done.
+wait
+
+#############################################
+#     Process the vcf files to make the     #
+#          sequences files for psmc         #
+#############################################
+MINQUAL=

@@ -53,10 +53,10 @@ def filterSample(vcf, out, qual, nQual, vardist, mind, maxd):
     linequal = []
     linegeno = []
     curChr = ''
-    print "0 lines done"
+#    print "0 lines done"
     for line in f:
         cnt += 1 
-        if cnt % 100000 == 0:
+        if cnt % 1000000 == 0:
             print "\r", cnt, "lines done"
         toks = line.strip().split()
         if toks[0] != curChr: # next chromosome
@@ -72,7 +72,7 @@ def filterSample(vcf, out, qual, nQual, vardist, mind, maxd):
         if re.match("INDEL", toks[7]) != None:
             if toks[4] == ".":
                 # Skip if null indel
-                print line, "null indel"
+#                print line, "null indel"
                 continue
             else: 
                 curtype = 2 #INDEL
@@ -82,7 +82,7 @@ def filterSample(vcf, out, qual, nQual, vardist, mind, maxd):
         curdepth = int([x.split('=')[1] for x in toks[7].split(';') if x[0:2] == 'DP'][0])
         # site fails depth criteria
         if curdepth < mind or curdepth > maxd:
-            print curpos, curdepth, "depth filter"
+#            print curpos, curdepth, "depth filter"
             continue
         # if curline is not variant, add it and continue
         if curtype == 0:
@@ -106,7 +106,7 @@ def filterSample(vcf, out, qual, nQual, vardist, mind, maxd):
                 # sites that are not influenced by new site
                 if (linepos[index]+vardist < curpos):
                     outfile.write(lines[index])
-                    print "snp write", linepos[index]
+#                    print "snp write", linepos[index]
                     delindexes.append(index)
                     continue
                 # Sites that are influenced by current site
@@ -124,7 +124,7 @@ def filterSample(vcf, out, qual, nQual, vardist, mind, maxd):
                 # sites that are not influenced by new site
                 if (linepos[index]+vardist < curpos):
                     outfile.write(lines[index])
-                    print "snp write", linepos[index]
+#                    print "indel write", linepos[index]
                     delindexes.append(index)
                     continue
                 # Sites that are influenced by current site
@@ -163,9 +163,9 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--neighborQual", metavar="nQual", dest="nqual", required=False, 
                         type=int, default=10, help="Minimum quality of SNP/indel neighbor (to filter by distance)")
     parser.add_argument("-d", "--minDepth", metavar="minDepth", dest="mindepth", required=False, 
-                        type=int, default=5, help="Minimum depth to retain variants")
+                        type=float, default=5, help="Minimum depth to retain variants")
     parser.add_argument("-D", "--maxDepth", metavar="maxDepth", dest="maxdepth", required=False, 
-                        type=int, default=100, help="Maximum depth to retain variants")
+                        type=float, default=100, help="Maximum depth to retain variants")
     parser.add_argument("-v", "--varDist", metavar="varDistance", dest="vardist", 
                         required=False, type=int, default=5, help="Minimum distance from snp/indel")
     args = parser.parse_args()
