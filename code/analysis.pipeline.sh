@@ -187,6 +187,9 @@ wait
 
 #############################################
 #     Process the vcf files to make the     #
-#          sequences files for psmc         #
+#      seq files for psmc and run psmc      #
 #############################################
-MINQUAL=
+$PROJECT_HOME/code/runPSMC.sh 
+
+## wait for the PSMC processed to finish.
+wait
