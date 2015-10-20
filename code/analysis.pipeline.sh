@@ -50,6 +50,8 @@ if [ ! -d $DATA_HOME/wolfRef ]; then
     mkdir $DATA_HOME/wolfRef
 fi
 
+echo "Directory setup complete."
+
 #################################################
 #  Data linking from Sama's initial processing  #
 #################################################
@@ -109,6 +111,8 @@ for vcf in /home/joseas/data/Wolf/Mikkel/Zhang_data/VCFsWolf/results/canines_ref
     fi
 done
 
+echo "Data linking complete."
+
 ##################################################
 #      Compute the stats for each vcf file       #
 ##################################################
@@ -136,6 +140,8 @@ done
 ## here so that the next steps wait
 wait
 
+echo "VCF statistics generation complete."
+
 ##################################################
 #       Filtering of vcf based on depth and      #
 #             distance to snps/indels            #
@@ -155,6 +161,8 @@ if [ ! -e wolfRef.allSamples.avgdepths ]; then
     done
 fi
 
+echo "Stats completed."
+
 ## Run the script to filter the vcf file to remove
 ## null indels and filter based on min/max depths.
 ## Also filter on proximity to indels and snps.
@@ -165,19 +173,10 @@ NEIGHBORQUAL=10
 
 cd $DATA_HOME/dogRef
 for vcf in *.vcf.bgz; do  
-    if [ ! -e $(basename $vcf .vcf.bgz).depthdist.vcf.bgz ]; then
+    if [ ! -e $(basename $vcf .vcf.bgz).depthdist.vcf.gz ]; then
 	AVGDEPTH=`grep $(basename $vcf .vcf.bgz) dogRef.allSamples.avgdepths | cut -f2 -d " "`
 	MAXDEPTH=`bc <<< "scale=0;$AVGDEPTH*2"`
-	(python $PROJECT_HOME/code/filterSampleLevel.py -i $vcf -q $MINQUAL -n $NEIGHBORQUAL -d $MINDEPTH -D $MAXDEPTH -v $MINDIST -o $(basename $vcf .vcf.bgz).depthdist.vcf && bgzip $(basename $vcf .vcf.bgz).depthdist.vcf) >& $(basename $vcf .vcf.bgz).log &
-    fi
-done
-
-cd $DATA_HOME/wolfRef
-for vcf in *.vcf.bgz; do  
-    if [ ! -e $(basename $vcf .vcf.bgz).depthdist.vcf.bgz ]; then
-	AVGDEPTH=`grep $(basename $vcf .vcf.bgz) wolfRef.allSamples.avgdepths | cut -f2 -d " "`
-	MAXDEPTH=`bc <<< "$AVGDEPTH*2"`
-	(python $PROJECT_HOME/code/filterSampleLevel.py -i $vcf -q $MINQUAL -n $NEIGHBORQUAL -d $MINDEPTH -D $MAXDEPTH -v $MINDIST -o $(basename $vcf .vcf.bgz).depthdist.vcf && bgzip $(basename $vcf .vcf.bgz).depthdist.vcf) >& $(basename $vcf .vcf.bgz).log &
+	(python $PROJECT_HOME/code/filterSampleLevel.py -i $vcf -q $MINQUAL -n $NEIGHBORQUAL -d $MINDEPTH -D $MAXDEPTH -v $MINDIST -o $(basename $vcf .vcf.bgz).depthdist.vcf && bgzip $(basename $vcf .vcf.bgz).depthdist.vcf) >& $PROJECT_HOME/logs/$(basename $vcf .vcf.bgz).depthdist.log &
     fi
 done
 
@@ -185,11 +184,73 @@ done
 ## Next steps should be run only if these processes are done.
 wait
 
+cd $DATA_HOME/wolfRef
+for vcf in *.vcf.bgz; do  
+    if [ ! -e $(basename $vcf .vcf.bgz).depthdist.vcf.gz ]; then
+	AVGDEPTH=`grep $(basename $vcf .vcf.bgz) wolfRef.allSamples.avgdepths | cut -f2 -d " "`
+	MAXDEPTH=`bc <<< "$AVGDEPTH*2"`
+	(python $PROJECT_HOME/code/filterSampleLevel.py -i $vcf -q $MINQUAL -n $NEIGHBORQUAL -d $MINDEPTH -D $MAXDEPTH -v $MINDIST -o $(basename $vcf .vcf.bgz).depthdist.vcf && bgzip $(basename $vcf .vcf.bgz).depthdist.vcf) >& $PROJECT_HOME/logs/$(basename $vcf .vcf.bgz).depthdist.log &
+    fi
+done
+
+## This command makes sure the shell waits for the filtering processes to be done.
+## Next steps should be run only if these processes are done.
+wait
+
+## Tabix index generation
+cd $DATA_HOME/dogRef
+for vcf in *.depthdist.vcf.gz; do  
+    if [ ! -e $vcf.tbi ]; then
+	tabix -p vcf $vcf &
+    fi
+done
+
+## Wait for the tabix commands to finish
+wait
+
+cd $DATA_HOME/wolfRef
+for vcf in *.depthdist.vcf.gz; do  
+    if [ ! -e $vcf.tbi ]; then
+	tabix -p vcf $vcf &
+    fi
+done
+
+## Wait for the tabix commands to finish
+wait
+
+echo "Per sample vcf filtering complete."
+
+#############################################
+#       Merge the vcfs and get list of      #
+#              triallelic sites             #
+#############################################
+## Sadly bcftools does not work dues to malformed vcf files,
+## esp. the absence of certain filter tags in the header.
+
+# module load vcftools/0.1.14
+# export PERL5LIB=/usr/local/src/vcftools/0.1.14/perl
+
+# cd $DATA_HOME/dogRef
+# if [ ! -e allAlignedToDog.snps_indels.vcf.gz ]; then
+#     perl /usr/local/src/vcftools/0.1.14/perl/vcf-merge *.depthdist.vcf.gz | bcftools > allAlignedToDog.snps_indels.vcf.gz
+    
+# fi
+
+# cd $DATA_HOME/wolfRef
+# if [ ! -e allAlignedToWolf.snps_indels.vcf.gz ]; then
+#     perl /usr/local/src/vcftools/0.1.14/perl/vcf-merge *.depthdist.vcf.gz | vcftools --vcf - --maf 0.01 --remove-indels --stdout | bgzip -c > allAlignedToWolf.snps_indels.vcf.gz 
+# fi
+
+# ## wait for bcftools to finish
+# wait
+
+# echo "Made the combined snps only file."
+
 #############################################
 #     Process the vcf files to make the     #
 #      seq files for psmc and run psmc      #
 #############################################
-$PROJECT_HOME/code/runPSMC.sh 
+#$PROJECT_HOME/code/runPSMC.sh 
 
 ## wait for the PSMC processed to finish.
-wait
+#wait

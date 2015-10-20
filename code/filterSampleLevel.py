@@ -79,6 +79,10 @@ def filterSample(vcf, out, qual, nQual, vardist, mind, maxd):
         elif toks[4] != '.':
             curtype = 1 # SNP
         curpos = int(toks[1])
+        # current filter, to be replaced with PASS
+        # This line has been added to replace the filter,
+        # so that bcftools can be used to merge. 
+        line = line.replace(toks[6], 'PASS')
         curdepth = int([x.split('=')[1] for x in toks[7].split(';') if x[0:2] == 'DP'][0])
         # site fails depth criteria
         if curdepth < mind or curdepth > maxd:
