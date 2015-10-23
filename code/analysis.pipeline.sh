@@ -226,31 +226,63 @@ echo "Per sample vcf filtering complete."
 #############################################
 ## Sadly bcftools does not work dues to malformed vcf files,
 ## esp. the absence of certain filter tags in the header.
+## YAY!!. tweaked the earlier filterSampleLevel.py script
+## to remove the filter tags, so that we can use bcftools
 
-# module load vcftools/0.1.14
-# export PERL5LIB=/usr/local/src/vcftools/0.1.14/perl
+module load bcftools/1.2
 
-# cd $DATA_HOME/dogRef
-# if [ ! -e allAlignedToDog.snps_indels.vcf.gz ]; then
-#     perl /usr/local/src/vcftools/0.1.14/perl/vcf-merge *.depthdist.vcf.gz | bcftools > allAlignedToDog.snps_indels.vcf.gz
-    
-# fi
+cd $DATA_HOME/dogRef
+if [ ! -e allAlignedToDog.triSNPs.bed ]; then
+    bcftools merge -m both -Ou *depthdist.vcf.gz | bcftools filter -Ov -i 'MAF[0]>0.01 & TYPE="snp" & ((REF!="N" & N_ALT>1) | N_ALT>2 )' | awk '{ OFS="\t"; if(!/^#/){ print $1,$2-1,$2 }}' > allAlignedToDog.triSNP.bed &
+fi
 
-# cd $DATA_HOME/wolfRef
-# if [ ! -e allAlignedToWolf.snps_indels.vcf.gz ]; then
-#     perl /usr/local/src/vcftools/0.1.14/perl/vcf-merge *.depthdist.vcf.gz | vcftools --vcf - --maf 0.01 --remove-indels --stdout | bgzip -c > allAlignedToWolf.snps_indels.vcf.gz 
-# fi
+cd $DATA_HOME/wolfRef
+if [ ! -e allAlignedToWolf.snps_indels.vcf.gz ]; then
+    bcftools merge -m both -Ou *depthdist.vcf.gz | bcftools filter -Ov -i 'MAF[0]>0.01 & TYPE="snp" & ((REF!="N" & N_ALT>1) | N_ALT>2 )' | awk '{ OFS="\t"; if(!/^#/){ print $1,$2-1,$2 }}' > allAlignedToWolf.triSNP.bed &
+fi
 
-# ## wait for bcftools to finish
-# wait
+## wait for bcftools to finish
+wait
 
-# echo "Made the combined snps only file."
+echo "Made the trialleleic snps bed file."
+
+############################################
+#    Filter out the triallelic snp sites   #
+#       single individual vcf files.       #
+############################################
+## Make another set of per sample vcf files
+## that have the trialleleic sites removed.
+
+module load bedtools/2.25.0
+
+cd $DATA_HOME/dogRef
+for vcf in *depthdist.vcf.gz; do
+    if [ ! -e $(basename $vcf .depthdist.vcf.gz).notri.depthdist.vcf.gz ]; then
+	bedtools subtract -a $vcf -b allAlignedToDog.triSNP.bed &
+    fi
+done
+wait
+
+cd $DATA_HOME/wolfRef
+for vcf in *depthdist.vcf.gz; do
+    if [ ! -e $(basename $vcf .depthdist.vcf.gz).notri.depthdist.vcf.gz ]; then
+	bedtools subtract -a $vcf -b allAlignedToWolf.triSNP.bed &
+    fi
+done
+wait
+
+echo "Made tri removed per sample vcf files."
 
 #############################################
 #     Process the vcf files to make the     #
 #      seq files for psmc and run psmc      #
 #############################################
-#$PROJECT_HOME/code/runPSMC.sh 
+## Remember that the runPSMC.sh script needs
+## to have the correct filenames. MAKE SURE
+## that these are correct before running this
+## section of commands.
 
-## wait for the PSMC processed to finish.
-#wait
+# $PROJECT_HOME/code/runPSMC.sh 
+
+# ## wait for the PSMC processed to finish.
+# wait
