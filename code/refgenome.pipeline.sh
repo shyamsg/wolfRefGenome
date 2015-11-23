@@ -22,8 +22,8 @@
 ## if someone else is recreating the analysis,
 ## this needs to be changed :) (STOP trying to write
 ## into my directory)
-PROJECT_HOME=/home/shyam/projects/wolfRefGenome
-DATA_HOME=/home/shyam/data/wolfRefGenome
+export PROJECT_HOME=/home/shyam/projects/wolfRefGenome
+export DATA_HOME=/home/shyam/data/wolfRefGenome
 
 ##################################################
 #                Directory setup                 #
@@ -232,12 +232,12 @@ echo "Per sample vcf filtering complete."
 module load bcftools/1.2
 
 cd $DATA_HOME/dogRef
-if [ ! -e allAlignedToDog.triSNPs.bed ]; then
+if [ ! -e allAlignedToDog.triSNP.bed ]; then
     bcftools merge -m both -Ou *depthdist.vcf.gz | bcftools filter -Ov -i 'MAF[0]>0.01 & TYPE="snp" & ((REF!="N" & N_ALT>1) | N_ALT>2 )' | awk '{ OFS="\t"; if(!/^#/){ print $1,$2-1,$2 }}' > allAlignedToDog.triSNP.bed &
 fi
 
 cd $DATA_HOME/wolfRef
-if [ ! -e allAlignedToWolf.snps_indels.vcf.gz ]; then
+if [ ! -e allAlignedToWolf.triSNP.bed ]; then
     bcftools merge -m both -Ou *depthdist.vcf.gz | bcftools filter -Ov -i 'MAF[0]>0.01 & TYPE="snp" & ((REF!="N" & N_ALT>1) | N_ALT>2 )' | awk '{ OFS="\t"; if(!/^#/){ print $1,$2-1,$2 }}' > allAlignedToWolf.triSNP.bed &
 fi
 
@@ -256,22 +256,44 @@ echo "Made the trialleleic snps bed file."
 module load bedtools/2.25.0
 
 cd $DATA_HOME/dogRef
-for vcf in *depthdist.vcf.gz; do
-    if [ ! -e $(basename $vcf .depthdist.vcf.gz).notri.depthdist.vcf.gz ]; then
-	bedtools subtract -a $vcf -b allAlignedToDog.triSNP.bed &
+for vcf in *.depthdist.vcf.gz; do
+    if [ ! -e $(basename $vcf .vcf.gz).notri.vcf.gz ]; then
+	zcat ${vcf/.notri/} | head -20000 | grep "^#" > $(basename $vcf .vcf.gz).notri.vcf && \
+	    bedtools subtract -a $vcf -b allAlignedToDog.triSNP.bed >> $(basename $vcf .vcf.gz).notri.vcf && \
+	    bgzip $(basename $vcf .vcf.gz).notri.vcf &
     fi
 done
 wait
 
 cd $DATA_HOME/wolfRef
-for vcf in *depthdist.vcf.gz; do
-    if [ ! -e $(basename $vcf .depthdist.vcf.gz).notri.depthdist.vcf.gz ]; then
-	bedtools subtract -a $vcf -b allAlignedToWolf.triSNP.bed &
+for vcf in *.depthdist.vcf.gz; do
+    if [ ! -e $(basename $vcf .vcf.gz).notri.vcf.gz ]; then
+	zcat ${vcf/.notri/} | head -20000 | grep "^#" > $(basename $vcf .vcf.gz).notri.vcf && \
+	    bedtools subtract -a $vcf -b allAlignedToWolf.triSNP.bed >> $(basename $vcf .vcf.gz).notri.vcf && \
+	    bgzip $(basename $vcf .vcf.gz).notri.vcf &
     fi
 done
 wait
 
 echo "Made tri removed per sample vcf files."
+
+## Tabix index generation
+cd $DATA_HOME/dogRef
+for vcf in *.depthdist.notri.vcf.gz; do  
+    if [ ! -e $vcf.tbi ]; then
+	tabix -p vcf $vcf &
+    fi
+done
+
+cd $DATA_HOME/wolfRef
+for vcf in *.depthdist.notri.vcf.gz; do  
+    if [ ! -e $vcf.tbi ]; then
+	tabix -p vcf $vcf &
+    fi
+done
+wait
+
+echo "Made tabix files for tri-removed vcfs."
 
 #############################################
 #     Process the vcf files to make the     #
@@ -282,7 +304,109 @@ echo "Made tri removed per sample vcf files."
 ## that these are correct before running this
 ## section of commands.
 
-# $PROJECT_HOME/code/runPSMC.sh 
+MINDEPTH=5
+WINDOWSIZE=100
 
-# ## wait for the PSMC processed to finish.
-# wait
+$PROJECT_HOME/code/runPSMC.sh $MINDEPTH $WINDOWSIZE 
+
+## wait for the PSMC processed to finish.
+wait
+
+echo "Ran psmc."
+
+##############################################
+# Generate the vcf file for input pca or mds #
+#   Perform pca and mds, first using plink   #
+#        and the using custom R code         #
+##############################################
+
+## Use bcftools to merge and filter the data to
+## the vcf file satisfying a threshold for mds
+## or pca. In this case, we will use no tri sites
+## and no sites with N as the reference.
+
+cd $DATA_HOME/dogRef
+if [ ! -e allAlignedToDog.snps.bcf ]; then
+    bcftools merge -m both -Ou *depthdist.notri.vcf.gz | bcftools filter -Ob -i 'MAF[0]>0.01 & TYPE="snp" & REF!="N" & N_ALT==1' > allAlignedToDog.snps.bcf & 
+fi
+
+cd $DATA_HOME/wolfRef
+if [ ! -e allAlignedToWolf.snps.bcf ]; then
+    bcftools merge -m both -Ou *depthdist.notri.vcf.gz | bcftools filter -Ob -i 'MAF[0]>0.01 & TYPE="snp" & REF!="N" & N_ALT==1' > allAlignedToWolf.snps.bcf & 
+fi
+
+## Wait for the bcftools things to finish running.
+wait
+echo "Made bcf files with all snps."
+
+## Filter this file to get final list of sites
+## with specified missingness and maf cutoffs.
+
+module load vcftools/0.1.14
+module load bcftools/1.2
+
+MISSING=0.75 ## maximum per site missingness is 25%
+MAF=0.05 ## minimum maf
+MINQ=30 ## minimum quality
+MINGQ=20 ## minimum genotype quality
+
+cd $DATA_HOME/dogRef
+if [ ! -e allAlignedToDog.miss$MISSING.maf$MAF.minq$MINQ.mingq$MINGQ.forPCA.bcf ]; then
+    bcftools view allAlignedToDog.snps.bcf | vcftools --vcf - --stdout --recode-INFO-all --recode --maf $MAF --max-missing $MISSING --minQ $MINQ --minGQ $MINGQ | sed 's/-1\/-1/.\/./g' | bcftools view -Ob > allAlignedToDog.miss$MISSING.maf$MAF.minq$MINQ.mingq$MINGQ.forPCA.bcf &
+fi
+
+cd $DATA_HOME/wolfRef
+if [ ! -e allAlignedToWolf.miss$MISSING.maf$MAF.minq$MINQ.mingq$MINGQ.forPCA.bcf ]; then
+    bcftools view allAlignedToWolf.snps.bcf | vcftools --vcf - --stdout --recode-INFO-all --recode --maf $MAF --max-missing $MISSING --minQ $MINQ --minGQ $MINGQ | sed 's/-1\/-1/.\/./g' | bcftools view -Ob > allAlignedToWolf.miss$MISSING.maf$MAF.minq$MINQ.mingq$MINGQ.forPCA.bcf &
+fi
+
+wait
+echo "Made bcf files for pca."
+
+###########################################
+# PCA/MDS using the bcf generated in the  #
+# step above. First use ngsCovar to get   #
+# the covar matrix. Then use R to do pca. #
+# For MDS, generate a dosage file, then   #
+# use R to do cmdscale or isomds.         #
+###########################################
+
+DOGFAI='/home/joseas/data/Wolf/RefGenome/canFam31_nucl.fasta.fai'
+WOLFFAI='/home/joseas/data/Wolf/VCFsWolf/data/prefixes/L.Dalen_14_wolf.scf.fasta.fai'
+NGSCOVAR=/home/fgvieira/data/appz/ngsTools/ngsPopGen/ngsCovar
+BCFROOT=$(dirname `which bcftools`)
+export LD_LIBRARY_PATH=`dirname $BCFROOT`/htslib-1.2.1/
+export BCFTOOLS_PLUGINS=`dirname $BCFROOT`/plugins/
+cd $PROJECT_HOME/analysis/pca
+
+
+for MISSPCA in 1.0 0.95 0.9 0.85 0.8; do 
+    if [ ! -e allAlignedToDog.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf ]; then
+    	bcftools view $DATA_HOME/dogRef/allAlignedToDog.miss0.75.maf0.05.minq30.mingq20.forPCA.bcf | vcftools --vcf - --max-missing $MISSPCA --recode --stdout > allAlignedToDog.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf
+    fi
+    nsites=$(bcftools plugin counts allAlignedToDog.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf | grep SNPs | cut -f2 -d:)
+    nsamps=$(bcftools plugin counts allAlignedToDog.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf | grep samples | cut -f2 -d:)
+    angsd -vcf-gl allAlignedToDog.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf -fai $DOGFAI -nInd $nsamps -doMajorMinor 1 -doMaf 1 -doPost 1 -doGeno 32 -out allAlignedToDog.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA && gunzip allAlignedToDog.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.geno.gz
+    
+    if [ ! -e allAlignedToWolf.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf ]; then
+    	bcftools view $DATA_HOME/wolfRef/allAlignedToWolf.miss0.75.maf0.05.minq30.mingq20.forPCA.bcf | vcftools --vcf - --max-missing $MISSPCA --recode --stdout > allAlignedToWolf.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf
+    fi    
+    nsites=$(bcftools plugin counts allAlignedToWolf.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf | grep SNPs | cut -f2 -d:)
+    nsamps=$(bcftools plugin counts allAlignedToWolf.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf | grep samples | cut -f2 -d:)
+    angsd -vcf-gl allAlignedToWolf.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf -fai $WOLFFAI -nInd $nsamps -doMajorMinor 1 -doMaf 1 -doPost 1 -doGeno 32 -out allAlignedToWolf.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA && gunzip allAlignedToWolf.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.geno.gz
+    for MINMAF in 0.05 0.1; do 
+	if [ ! -e allAlignedToDog.miss$MISSPCA.maf$MINMAF.minq30.mingq20.forPCA.covar ]; then
+	    $NGSCOVAR -probfile allAlignedToDog.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.geno -outfile allAlignedToDog.miss$MISSPCA.maf$MINMAF.minq30.mingq20.forPCA.normed.covar -nind $nsamps -nsites $nsites -call 0 -minmaf $MINMAF -norm 1
+	fi
+	if [ ! -e allAlignedToWolf.miss$MISSPCA.maf$MINMAF.minq30.mingq20.forPCA.covar ]; then
+	    $NGSCOVAR -probfile allAlignedToWolf.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.geno -outfile allAlignedToWolf.miss$MISSPCA.maf$MINMAF.minq30.mingq20.forPCA.normed.covar -nind $nsamps -nsites $nsites -call 0 -minmaf $MINMAF -norm 1
+	fi
+	    
+	## Run eigen decomposition on the covar matrix using R
+	Rscript $PROJECT_HOME/code/pca.ngscovar.R allAlignedToDog.miss$MISSPCA.maf$MINMAF.minq30.mingq20.forPCA.normed.covar knownDatasets.samples.txt allAlignedToDog.miss$MISSPCA.maf$MINMAF.minq30.mingq20.normed.pca.pdf
+	Rscript $PROJECT_HOME/code/pca.ngscovar.R allAlignedToWolf.miss$MISSPCA.maf$MINMAF.minq30.mingq20.forPCA.normed.covar knownDatasets.samples.txt allAlignedToWolf.miss$MISSPCA.maf$MINMAF.minq30.mingq20.normed.pca.pdf
+
+	echo "         MAF $MINMAF."
+    done
+    echo "Done with MISS $MISSPCA."
+done
