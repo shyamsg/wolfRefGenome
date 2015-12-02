@@ -22,11 +22,13 @@ cols = as.numeric(as.factor(mems$species))
 pchs = as.numeric(as.factor(mems$dataset))+15
 
 ## Plot the PCA plot
-pdf(file=outpdf)
-plot(pca.covar$vectors[,1], pca.covar$vectors[,2], col=cols, pch=pchs, xlab=paste0("PC 1 (", pca.covar$values[1], "%)"), ylab=paste0("PC 2 (", pca.covar$values[2],"%)"), cex=0.7)
-legend("topright", legend=levels(as.factor(mems$species)), pch=16, col=1:3)
-legend("bottomright", legend=levels(as.factor(mems$dataset)), pch=16:18, col=1)
-plot(pca.covar$vectors[,3], pca.covar$vectors[,4], col=cols, pch=pchs, xlab=paste0("PC 3 (", pca.covar$values[3], "%)"), ylab=paste0("PC 4 (", pca.covar$values[4],"%)"), cex=0.7)
-legend("topright", legend=levels(as.factor(mems$species)), pch=16, col=1:3)
-legend("bottomright", legend=levels(as.factor(mems$dataset)), pch=16:18, col=1)
+pdf(file=outpdf, width=12, height=16)
+layout(matrix(1:12, nr=4, byrow=T))
+for (pcindex in 1:10) {
+    p1 = 2*pcindex-1
+    p2 = p1+1
+    plot(pca.covar$vectors[,p1], pca.covar$vectors[,p2], col=cols, pch=pchs, xlab=paste0("PC ", p1, " (", pca.covar$values[p1], "%)"), ylab=paste0("PC ", p2, " (", pca.covar$values[p2],"%)"), cex=0.7)
+    legend("topright", legend=levels(as.factor(mems$species)), pch=16, col=1:3)
+    legend("bottomright", legend=levels(as.factor(mems$dataset)), pch=16:18, col=1)
+}
 dev.off()
