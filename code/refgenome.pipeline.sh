@@ -367,9 +367,8 @@ echo "Made bcf files for pca."
 # Cannot use plink because it cannot take #
 # the scaffold genome, since it contains  #
 # non standard names for chromosomes.     #
-# The second way of doing this is to make #
-# a dosage file from the vcf file and then#
-# use it to do pca or mds.                #
+# We also make the dosage file for each of#
+# these vcf files and use them for pca.   #
 ###########################################
 
 DOGFAI='/home/joseas/data/Wolf/RefGenome/canFam31_nucl.fasta.fai'
@@ -382,37 +381,40 @@ export LD_LIBRARY_PATH=`dirname $BCFROOT`/htslib-1.2.1/
 export BCFTOOLS_PLUGINS=`dirname $BCFROOT`/plugins/
 cd $PROJECT_HOME/analysis/pca
 
-
 for REF in Dog Wolf; do
     if [ $REF == "Dog" ]; then
 	datadir=$DATA_HOME/dogRef
+	curfai=$DOGFAI
     elif [ $REF == "Wolf" ]; then
-	ref=$DATA_HOME/wolfRef
+	datadir=$DATA_HOME/wolfRef
+	curfai=$WOLFFAI
     fi
-    for MISSPCA in 1.0 0.95 0.9; do 
-	if [ ! -e $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf ]; then
-    	    bcftools view $datadir/allAlignedTo$REF.miss0.75.maf0.05.minq30.mingq20.forPCA.bcf | vcftools --vcf - --max-missing $MISSPCA --recode --stdout > $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf
+    for MISSPCA in 1.0 0.95 0.9; do
+	if [ ! -e $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.vcf ]; then
+    	    bcftools view $datadir/allAlignedTo$REF.miss$MISSING.maf$MAF.minq30.mingq20.forPCA.bcf | vcftools --vcf - --max-missing $MISSPCA --recode --stdout > $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.vcf
 	fi
-	nsites=$(bcftools plugin counts $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf | grep SNPs | cut -f2 -d:)
-	nsamps=$(bcftools plugin counts $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf | grep samples | cut -f2 -d:)
-	if [ ! -e $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.geno ]; then
-	    angsd -vcf-gl $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf -fai $DOGFAI -nInd $nsamps -doMajorMinor 1 -doMaf 1 -doPost 1 -doGeno 32 -out $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA && gunzip $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.geno.gz
+	nsites=$(bcftools plugin counts $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.vcf | grep SNPs | cut -f2 -d:)
+	nsamps=$(bcftools plugin counts $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.vcf | grep samples | cut -f2 -d:)
+	if [ ! -e $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.geno ]; then
+	    angsd -vcf-gl $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.vcf -fai $curfai -nInd $nsamps -doMajorMinor 1 -doMaf 1 -doPost 1 -doGeno 32 -out $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA && gunzip $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.geno.gz
 	fi
-	if [ ! -e $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.dosage ]; then
-	    python $VCF2DOSAGE -v $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.vcf -o $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.dosage -m NA
+	if [ ! -e $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.dosage ]; then
+	    python $VCF2DOSAGE -v $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.vcf -o $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.dosage -m NA
 	fi
 	for MINMAF in 0.05 0.1 0.2; do 
 	    ## NGSCovar used to generate pca plots
 	    if [ ! -e $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MINMAF.minq30.mingq20.forPCA.covar ]; then
-		$NGSCOVAR -probfile $datadir/allAlignedTo$REF.miss$MISSPCA.maf0.05.minq30.mingq20.forPCA.geno -outfile allAlignedTo$REF.miss$MISSPCA.maf$MINMAF.minq30.mingq20.forPCA.normed.covar -nind $nsamps -nsites $nsites -call 0 -minmaf $MINMAF -norm 1
+		$NGSCOVAR -probfile $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.geno -outfile allAlignedTo$REF.miss$MISSPCA.maf$MINMAF.minq30.mingq20.forPCA.normed.covar -nind $nsamps -nsites $nsites -call 0 -minmaf $MINMAF -norm 1
 	    fi
 	    ## Run eigen decomposition on the covar matrix using R
 	    Rscript $PROJECT_HOME/code/pca.ngscovar.R allAlignedTo$REF.miss$MISSPCA.maf$MINMAF.minq30.mingq20.forPCA.normed.covar knownDatasets.samples.txt allAlignedTo$REF.miss$MISSPCA.maf$MINMAF.minq30.mingq20.ngscovar.pca.pdf
-	    
 	    echo "========= MAF $MINMAF."
 	done
+	## Estimate the folded SFS from these files, using dosage files.
 	echo "Done with MISS $MISSPCA."
     done
+    ## Perform a pca using dosage and mds on the dosage files.
+    Rscript $PROJECT_HOME/code/pca.dosage.R $datadir/allAlignedTo$REF.miss$MISSPCA.maf$MAF.minq30.mingq20.forPCA.dosage knownDatasets.samples.txt $MINMAF allAlignedTo$REF.miss$MISSPCA.maf$MINMAF.minq30.mingq20.dosage.pca.pdf
     echo "Done with $REF."
 done
 
@@ -431,6 +433,6 @@ fi
 #cd matchedBams
 #$PROJECT_HOME/code/generateMatchedBams.sh
 
-############################################
-# Stats generation using the aligned vcfs. #
-############################################
+################################################
+# Estimate SFS from the dosage file and angsd. #
+################################################
